@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Touchstone Schedules</title>
+<meta name="description" content="Combined live class schedule for all Touchstone Climbing gyms">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Touchstone">
+<meta name="theme-color" content="#101418">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+  :root {
+    --bg: #101418;
+    --surface: #1a2028;
+    --surface-2: #232b36;
+    --border: #2e3946;
+    --text: #eef2f6;
+    --text-dim: #9aa7b4;
+    --accent: #4da3ff;
+    --green: #3ecf8e;
+    --red: #ff6b6b;
+    --amber: #ffb454;
+    --radius: 14px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior-y: none; }
+  body { padding-bottom: calc(20px + var(--safe-bottom)); }
+
+  header {
+    position: sticky; top: 0; z-index: 30; background: rgba(16,20,24,.92);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    padding: calc(10px + var(--safe-top)) 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .bar { display: flex; align-items: center; gap: 10px; }
+  .bar h1 { font-size: 19px; margin: 0; flex: 1; font-weight: 700; letter-spacing: .2px; }
+  .iconbtn {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    border-radius: 10px; padding: 7px 12px; font-size: 14px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer; position: relative;
+  }
+  .iconbtn .cnt {
+    background: var(--accent); color: #06121f; border-radius: 999px;
+    font-size: 11px; font-weight: 800; padding: 1px 6px;
+  }
+  .datestrip {
+    display: flex; gap: 8px; overflow-x: auto; padding: 10px 2px 12px;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .datestrip::-webkit-scrollbar { display: none; }
+  .daychip {
+    flex: 0 0 auto; min-width: 56px; text-align: center; padding: 7px 10px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    color: var(--text-dim); cursor: pointer; user-select: none; -webkit-user-select: none;
+  }
+  .daychip .dow { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; }
+  .daychip .dom { font-size: 17px; font-weight: 700; color: var(--text); }
+  .daychip.sel { background: var(--accent); border-color: var(--accent); color: #06121f; }
+  .daychip.sel .dom { color: #06121f; }
+
+  main { padding: 12px 14px 0; max-width: 720px; margin: 0 auto; }
+
+  .notice { color: var(--text-dim); font-size: 14px; text-align: center; padding: 34px 20px; line-height: 1.5; }
+  .errline { color: var(--amber); font-size: 12.5px; padding: 6px 2px 0; }
+
+  .timegroup { margin: 18px 0 8px; font-size: 13px; font-weight: 700; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px; }
+
+  .card {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 14px; margin-bottom: 10px; position: relative; overflow: hidden;
+  }
+  .card:active { background: var(--surface-2); }
+  .card .stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+  .row1 { display: flex; align-items: baseline; gap: 8px; }
+  .title { font-size: 15.5px; font-weight: 700; flex: 1; line-height: 1.3; }
+  .time { font-size: 13px; color: var(--text-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .row2 { display: flex; align-items: center; gap: 8px; margin-top: 7px; flex-wrap: wrap; }
+  .gymtag { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--text-dim); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .cat { font-size: 11.5px; color: var(--text-dim); background: var(--surface-2);
+    border: 1px solid var(--border); padding: 2px 8px; border-radius: 999px; }
+  .cap { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: auto; }
+  .cap.ok { color: var(--green); background: rgba(62,207,142,.12); }
+  .cap.full { color: var(--red); background: rgba(255,107,107,.12); }
+  .cap.other { color: var(--amber); background: rgba(255,180,84,.12); }
+  .instr { font-size: 12.5px; color: var(--text-dim); }
+
+  .skel { height: 74px; border-radius: var(--radius); margin-bottom: 10px;
+    background: linear-gradient(100deg, var(--surface) 40%, var(--surface-2) 50%, var(--surface) 60%);
+    background-size: 200% 100%; animation: sh 1.2s infinite linear; }
+  @keyframes sh { from { background-position: 130% 0; } to { background-position: -130% 0; } }
+
+  /* ---- filter sheet ---- */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 40;
+    opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: var(--surface); border-radius: 18px 18px 0 0; border: 1px solid var(--border); border-bottom: none;
+    max-height: 82vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    transform: translateY(102%); transition: transform .25s cubic-bezier(.3,.8,.3,1);
+    padding: 6px 16px calc(24px + var(--safe-bottom));
+  }
+  .sheet.open { transform: translateY(0); }
+  .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 8px auto 4px; }
+  .sheet h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); margin: 18px 0 10px; display: flex; align-items: center; }
+  .sheet h2 .mini { margin-left: auto; display: flex; gap: 12px; text-transform: none; letter-spacing: 0; }
+  .mini button { background: none; border: none; color: var(--accent); font-size: 13px; font-weight: 600; padding: 0; cursor: pointer; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim);
+    padding: 8px 12px; border-radius: 999px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+  }
+  .chip.on { border-color: var(--accent); color: var(--text); background: rgba(77,163,255,.13); }
+  .region { font-size: 12px; color: var(--text-dim); margin: 10px 0 6px; font-weight: 700; }
+  .donebtn {
+    width: 100%; margin-top: 22px; background: var(--accent); color: #06121f;
+    font-size: 16px; font-weight: 800; border: none; border-radius: 12px; padding: 13px; cursor: pointer;
+  }
+  .foot { text-align: center; color: var(--text-dim); font-size: 11.5px; padding: 18px 14px 6px; line-height: 1.6; }
+  .foot a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <h1>Touchstone Schedules</h1>
+    <button class="iconbtn" id="refreshBtn" aria-label="Refresh">&#8635;</button>
+    <button class="iconbtn" id="filterBtn">Filters <span class="cnt" id="filterCnt"></span></button>
+  </div>
+  <div class="datestrip" id="datestrip"></div>
+</header>
+
+<main id="main"></main>
+<div class="foot" id="foot"></div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h2>Programs <span class="mini"><button data-act="cats-all">All</button><button data-act="cats-none">None</button></span></h2>
+  <div class="chips" id="catChips"></div>
+  <h2>Gyms <span class="mini"><button data-act="gyms-all">All</button><button data-act="gyms-none">None</button></span></h2>
+  <div id="gymChips"></div>
+  <button class="donebtn" id="doneBtn">Done</button>
+</div>
+
+<script>
+"use strict";
+
+/* ================= data ================= */
+const API = "https://portal.touchstoneclimbing.com/graphql-public";
+const PORTAL = "https://portal.touchstoneclimbing.com";
+
+const GYMS = [
+  { slug:"missioncliffs", label:"Mission Cliffs",    city:"San Francisco", region:"SF Bay Area",  id:"RmFjaWxpdHk6MTI4OQ==", color:"#4da3ff" },
+  { slug:"dogpatch",      label:"Dogpatch",          city:"San Francisco", region:"SF Bay Area",  id:"RmFjaWxpdHk6MTI3MQ==", color:"#3ecf8e" },
+  { slug:"ironworks",     label:"Ironworks",         city:"Berkeley",      region:"SF Bay Area",  id:"RmFjaWxpdHk6OA==",     color:"#ffb454" },
+  { slug:"oaks",          label:"The Oaks",          city:"Berkeley",      region:"SF Bay Area",  id:"RmFjaWxpdHk6MTI5NQ==", color:"#b28dff" },
+  { slug:"power",         label:"Great Western",     city:"Oakland",       region:"SF Bay Area",  id:"RmFjaWxpdHk6MTI3Nw==", color:"#ff8fab" },
+  { slug:"pacificpipe",   label:"Pacific Pipe",      city:"Oakland",       region:"SF Bay Area",  id:"RmFjaWxpdHk6MTMwNw==", color:"#5eead4" },
+  { slug:"diablo",        label:"Diablo Rock",       city:"Concord",       region:"SF Bay Area",  id:"RmFjaWxpdHk6MTI3NA==", color:"#f97316" },
+  { slug:"hyperion",      label:"Hyperion",          city:"Redwood City",  region:"SF Bay Area",  id:"RmFjaWxpdHk6MjgzMzA2NzY=", color:"#facc15" },
+  { slug:"studio",        label:"The Studio",        city:"San Jose",      region:"SF Bay Area",  id:"RmFjaWxpdHk6MTI5OA==", color:"#a3e635" },
+  { slug:"pipeworks",     label:"Pipeworks",         city:"Sacramento",    region:"Sacramento & Fresno", id:"RmFjaWxpdHk6MTI5Mg==", color:"#22d3ee" },
+  { slug:"metalmark",     label:"Metalmark",         city:"Fresno",        region:"Sacramento & Fresno", id:"RmFjaWxpdHk6MTI4Ng==", color:"#fb7185" },
+  { slug:"la",            label:"LA Boulders",       city:"Los Angeles",   region:"Southern California", id:"RmFjaWxpdHk6MTI4Mw==", color:"#c084fc" },
+  { slug:"hollywood",     label:"Hollywood Boulders",city:"Los Angeles",   region:"Southern California", id:"RmFjaWxpdHk6MTI4MA==", color:"#34d399" },
+  { slug:"cliffs",        label:"Cliffs of Id",      city:"Culver City",   region:"Southern California", id:"RmFjaWxpdHk6MTI2OA==", color:"#60a5fa" },
+  { slug:"post",          label:"The Post",          city:"Pasadena",      region:"Southern California", id:"RmFjaWxpdHk6MTE=",     color:"#f472b6" },
+  { slug:"verdigo",       label:"Verdigo Boulders",  city:"Burbank",       region:"Southern California", id:"RmFjaWxpdHk6MTMwMQ==", color:"#fbbf24" },
+  { slug:"class5",        label:"Class 5",           city:"Torrance",      region:"Southern California", id:"RmFjaWxpdHk6MTI2NQ==", color:"#2dd4bf" },
+];
+
+/* canonical program categories, in display order */
+const CATS = [
+  { key:"intro-classes",          label:"Intro Classes" },
+  { key:"climbing-clinics",       label:"Climbing Clinics" },
+  { key:"yoga-classes",           label:"Yoga Classes" },
+  { key:"yoga-clinics",           label:"Yoga Clinics" },
+  { key:"fitness-classes",        label:"Fitness Classes" },
+  { key:"fitness-clinics",        label:"Fitness Clinics" },
+  { key:"affinity-meetup-groups", label:"Affinity Groups" },
+  { key:"youth-programs",         label:"Youth Programs" },
+  { key:"gym-events",             label:"Gym Events" },
+  { key:"other",                  label:"Other" },
+];
+/* portal slugs that vary per gym -> canonical key */
+const CAT_ALIASES = {
+  "fintess-clinics": "fitness-clinics",
+  "affinity-groups": "affinity-meetup-groups",
+};
+
+const CONFIG_QUERY = `query C($input: StorefrontConfigInput!){ storefrontConfig(input:$input){ root } }`;
+const CAL_QUERY = `query S($input: CalendarFilter){ calendar(input:$input){
+  publicTitle startLocal endLocal instructorText capacityText planId sessionGraphId } }`;
+
+/* ================= state ================= */
+const store = {
+  load(k, fallback) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fallback : v; } catch { return fallback; } },
+  save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let selGyms = new Set(store.load("ts_gyms", GYMS.map(g => g.slug)));
+let selCats = new Set(store.load("ts_cats", CATS.filter(c => !["youth-programs","gym-events","other"].includes(c.key)).map(c => c.key)));
+let selDate = todayStr();
+const cfgCache = {};       // slug -> {plans: {planId: catKey}, byCat: {catKey: [planId]}}
+const dayCache = new Map();// `${slug}|${date}|${planKey}` -> events[]
+let fetchSeq = 0;
+
+function todayStr(offset = 0) {
+  const d = new Date(); d.setDate(d.getDate() + offset);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+/* ================= api ================= */
+async function gql(query, variables) {
+  const r = await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, variables }),
+  });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const j = await r.json();
+  if (j.errors && j.errors.length) throw new Error(j.errors[0].message);
+  return j.data;
+}
+
+async function getConfig(gym) {
+  if (cfgCache[gym.slug]) return cfgCache[gym.slug];
+  const lsKey = "ts_cfg2_" + gym.slug;
+  const cached = store.load(lsKey, null);
+  if (cached && Date.now() - cached.at < 24 * 3600e3) { cfgCache[gym.slug] = cached.cfg; return cached.cfg; }
+
+  const data = await gql(CONFIG_QUERY, { input: { facilitySlug: gym.slug, language: "ENGLISH" } });
+  let root = data.storefrontConfig.root;
+  if (typeof root === "string") root = JSON.parse(root);
+
+  let calNode = null;
+  (function find(n) {
+    if (!n || typeof n !== "object" || calNode) return;
+    if (n.__typename === "StorefrontCalendar") { calNode = n; return; }
+    for (const c of (n.children || [])) find(c);
+  })(root);
+
+  const cfg = { plans: {}, byCat: {} };
+  for (const g of (calNode && calNode.children) || []) {
+    if (g.__typename !== "StorefrontCalendarGroup") continue;
+    let key = CAT_ALIASES[g.slug] || g.slug;
+    if (!CATS.some(c => c.key === key)) key = "other";
+    for (const p of (g.children || [])) {
+      if (p.__typename !== "StorefrontPlan" || !p.planId) continue;
+      cfg.plans[p.planId] = key;
+      (cfg.byCat[key] = cfg.byCat[key] || []).push(p.planId);
+    }
+  }
+  cfgCache[gym.slug] = cfg;
+  store.save(lsKey, { at: Date.now(), cfg });
+  return cfg;
+}
+
+async function getDay(gym, date, force) {
+  const cfg = await getConfig(gym);
+  const planIds = [];
+  for (const cat of selCats) for (const pid of (cfg.byCat[cat] || [])) planIds.push(pid);
+  if (!planIds.length) return [];
+  const key = gym.slug + "|" + date + "|" + planIds.slice().sort().join(",");
+  if (!force && dayCache.has(key)) return dayCache.get(key);
+  const data = await gql(CAL_QUERY, { input: { facilityId: gym.id, startDate: date, endDate: date, planId: planIds } });
+  const evts = (data.calendar || []).map(e => ({ ...e, gym, cat: cfg.plans[e.planId] || "other" }));
+  dayCache.set(key, evts);
+  return evts;
+}
+
+/* ================= rendering ================= */
+const $ = id => document.getElementById(id);
+
+function renderDates() {
+  const strip = $("datestrip");
+  strip.innerHTML = "";
+  for (let i = 0; i < 14; i++) {
+    const ds = todayStr(i);
+    const d = new Date(ds + "T12:00:00");
+    const el = document.createElement("div");
+    el.className = "daychip" + (ds === selDate ? " sel" : "");
+    el.innerHTML = `<div class="dow">${i === 0 ? "Today" : d.toLocaleDateString("en-US",{weekday:"short"})}</div><div class="dom">${d.getDate()}</div>`;
+    el.onclick = () => { selDate = ds; renderDates(); loadDay(); };
+    strip.appendChild(el);
+  }
+}
+
+function fmtTime(s) {
+  const [h, m] = s.slice(11, 16).split(":").map(Number);
+  const ap = h >= 12 ? "pm" : "am";
+  return ((h % 12) || 12) + (m ? ":" + String(m).padStart(2,"0") : "") + ap;
+}
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function catLabel(k) { const c = CATS.find(c => c.key === k); return c ? c.label : k; }
+
+function capClass(t) {
+  if (!t) return null;
+  const s = t.toLowerCase();
+  if (s.includes("available") || s.includes("spot") || s.includes("open")) return s.includes("full") ? "full" : "ok";
+  if (s.includes("full") || s.includes("sold out") || s.includes("waitlist")) return "full";
+  return "other";
+}
+
+function renderSkeleton() {
+  $("main").innerHTML = '<div style="height:14px"></div>' + '<div class="skel"></div>'.repeat(6);
+}
+
+function renderEvents(evts, errs) {
+  const main = $("main");
+  main.innerHTML = "";
+  if (errs.length) {
+    const e = document.createElement("div");
+    e.className = "errline";
+    e.textContent = "Couldn't load: " + errs.map(x => x.label).join(", ") + " — pull refresh to retry";
+    main.appendChild(e);
+  }
+  if (!evts.length) {
+    const n = document.createElement("div");
+    n.className = "notice";
+    n.innerHTML = selGyms.size === 0 ? "No gyms selected.<br>Open <b>Filters</b> to pick your gyms." :
+                  selCats.size === 0 ? "No programs selected.<br>Open <b>Filters</b> to pick program types." :
+                  "Nothing scheduled for this day<br>with your current filters.";
+    main.appendChild(n);
+    return;
+  }
+  evts.sort((a, b) => a.startLocal.localeCompare(b.startLocal) || a.gym.label.localeCompare(b.gym.label));
+  let lastHour = null;
+  for (const e of evts) {
+    const hour = e.startLocal.slice(11, 13);
+    if (hour !== lastHour) {
+      lastHour = hour;
+      const h = document.createElement("div");
+      h.className = "timegroup";
+      const hh = Number(hour);
+      h.textContent = ((hh % 12) || 12) + " " + (hh >= 12 ? "PM" : "AM");
+      main.appendChild(h);
+    }
+    const a = document.createElement("a");
+    a.className = "card";
+    a.href = `${PORTAL}/${e.gym.slug}/booking/${encodeURIComponent(e.sessionGraphId)}`;
+    a.target = "_blank"; a.rel = "noopener";
+    const cc = capClass(e.capacityText);
+    a.innerHTML = `
+      <div class="stripe" style="background:${e.gym.color}"></div>
+      <div class="row1">
+        <div class="title">${esc(e.publicTitle)}</div>
+        <div class="time">${fmtTime(e.startLocal)}&#8211;${fmtTime(e.endLocal)}</div>
+      </div>
+      <div class="row2">
+        <span class="gymtag"><span class="dot" style="background:${e.gym.color}"></span>${esc(e.gym.label)}</span>
+        <span class="cat">${esc(catLabel(e.cat))}</span>
+        ${e.instructorText ? `<span class="instr">${esc(e.instructorText)}</span>` : ""}
+        ${cc ? `<span class="cap ${cc}">${esc(e.capacityText)}</span>` : ""}
+      </div>`;
+    main.appendChild(a);
+  }
+  $("foot").innerHTML = `Live from <a href="${PORTAL}" target="_blank" rel="noopener">portal.touchstoneclimbing.com</a> &middot; tap a class to book &middot; updated ${new Date().toLocaleTimeString()}`;
+}
+
+async function loadDay(force) {
+  const seq = ++fetchSeq;
+  renderSkeleton();
+  const gyms = GYMS.filter(g => selGyms.has(g.slug));
+  const results = await Promise.allSettled(gyms.map(g => getDay(g, selDate, force)));
+  if (seq !== fetchSeq) return; // superseded by newer request
+  const evts = [], errs = [];
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled") evts.push(...r.value);
+    else { errs.push(gyms[i]); console.warn(gyms[i].slug, r.reason); }
+  });
+  renderEvents(evts, errs);
+}
+
+/* ================= filters ================= */
+function renderFilterCount() {
+  $("filterCnt").textContent = selGyms.size + "/" + GYMS.length;
+}
+function renderChips() {
+  const cc = $("catChips");
+  cc.innerHTML = "";
+  for (const c of CATS) {
+    const el = document.createElement("div");
+    el.className = "chip" + (selCats.has(c.key) ? " on" : "");
+    el.textContent = c.label;
+    el.onclick = () => { selCats.has(c.key) ? selCats.delete(c.key) : selCats.add(c.key); persist(); renderChips(); };
+    cc.appendChild(el);
+  }
+  const gc = $("gymChips");
+  gc.innerHTML = "";
+  let region = null;
+  for (const g of GYMS) {
+    if (g.region !== region) {
+      region = g.region;
+      const r = document.createElement("div");
+      r.className = "region"; r.textContent = region;
+      gc.appendChild(r);
+      const wrap = document.createElement("div");
+      wrap.className = "chips"; wrap.dataset.region = region;
+      gc.appendChild(wrap);
+    }
+    const el = document.createElement("div");
+    el.className = "chip" + (selGyms.has(g.slug) ? " on" : "");
+    el.innerHTML = `<span class="dot" style="background:${g.color}"></span>${esc(g.label)} <span style="opacity:.6;font-weight:500">${esc(g.city)}</span>`;
+    el.onclick = () => { selGyms.has(g.slug) ? selGyms.delete(g.slug) : selGyms.add(g.slug); persist(); renderChips(); renderFilterCount(); };
+    gc.lastElementChild.appendChild(el);
+  }
+}
+function persist() {
+  store.save("ts_gyms", [...selGyms]);
+  store.save("ts_cats", [...selCats]);
+}
+function openSheet(open) {
+  $("sheet").classList.toggle("open", open);
+  $("scrim").classList.toggle("open", open);
+  if (!open) loadDay();
+}
+
+$("filterBtn").onclick = () => openSheet(true);
+$("scrim").onclick = () => openSheet(false);
+$("doneBtn").onclick = () => openSheet(false);
+$("refreshBtn").onclick = () => loadDay(true);
+$("sheet").addEventListener("click", e => {
+  const act = e.target && e.target.dataset && e.target.dataset.act;
+  if (!act) return;
+  if (act === "cats-all") selCats = new Set(CATS.map(c => c.key));
+  if (act === "cats-none") selCats = new Set();
+  if (act === "gyms-all") selGyms = new Set(GYMS.map(g => g.slug));
+  if (act === "gyms-none") selGyms = new Set();
+  persist(); renderChips(); renderFilterCount();
+});
+
+/* ================= boot ================= */
+renderDates();
+renderChips();
+renderFilterCount();
+loadDay();
+</script>
+</body>
+</html>

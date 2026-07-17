@@ -205,7 +205,7 @@ const CAT_ALIASES = {
 
 const CONFIG_QUERY = `query C($input: StorefrontConfigInput!){ storefrontConfig(input:$input){ root } }`;
 const CAL_QUERY = `query S($input: CalendarFilter){ calendar(input:$input){
-  publicTitle startLocal endLocal instructorText capacityText planId sessionGraphId } }`;
+  publicTitle startLocal endLocal instructorText capacityText planId courseId } }`;
 
 /* ================= state ================= */
 const store = {
@@ -243,7 +243,7 @@ async function gql(query, variables) {
 
 async function getConfig(gym) {
   if (cfgCache[gym.slug]) return cfgCache[gym.slug];
-  const lsKey = "ts_cfg2_" + gym.slug;
+  const lsKey = "ts_cfg3_" + gym.slug;
   const cached = store.load(lsKey, null);
   if (cached && Date.now() - cached.at < 24 * 3600e3) { cfgCache[gym.slug] = cached.cfg; return cached.cfg; }
 
@@ -265,7 +265,7 @@ async function getConfig(gym) {
     if (!CATS.some(c => c.key === key)) key = "other";
     for (const p of (g.children || [])) {
       if (p.__typename !== "StorefrontPlan" || !p.planId) continue;
-      cfg.plans[p.planId] = key;
+      cfg.plans[p.planId] = { cat: key, slug: p.slug };
       (cfg.byCat[key] = cfg.byCat[key] || []).push(p.planId);
     }
   }
@@ -282,7 +282,10 @@ async function getDay(gym, date, force) {
   const key = gym.slug + "|" + date + "|" + planIds.slice().sort().join(",");
   if (!force && dayCache.has(key)) return dayCache.get(key);
   const data = await gql(CAL_QUERY, { input: { facilityId: gym.id, startDate: date, endDate: date, planId: planIds } });
-  const evts = (data.calendar || []).map(e => ({ ...e, gym, cat: cfg.plans[e.planId] || "other" }));
+  const evts = (data.calendar || []).map(e => {
+    const plan = cfg.plans[e.planId] || {};
+    return { ...e, gym, cat: plan.cat || "other", planSlug: plan.slug };
+  });
   dayCache.set(key, evts);
   return evts;
 }
@@ -356,7 +359,11 @@ function renderEvents(evts, errs) {
     }
     const a = document.createElement("a");
     a.className = "card";
-    a.href = `${PORTAL}/${e.gym.slug}/booking/${encodeURIComponent(e.sessionGraphId)}`;
+    // Class detail + booking lives at /{gym}/programs/{plan-slug}?course={courseId};
+    // fall back to the gym's calendar if we don't have a slug for this plan.
+    a.href = e.planSlug && e.courseId
+      ? `${PORTAL}/${e.gym.slug}/programs/${e.planSlug}?course=${encodeURIComponent(e.courseId)}`
+      : `${PORTAL}/${e.gym.slug}/n/calendar`;
     a.target = "_blank"; a.rel = "noopener";
     const cc = capClass(e.capacityText);
     a.innerHTML = `

@@ -212,8 +212,12 @@ const store = {
   load(k, fallback) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fallback : v; } catch { return fallback; } },
   save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-let selGyms = new Set(store.load("ts_gyms", GYMS.map(g => g.slug)));
-let selCats = new Set(store.load("ts_cats", CATS.filter(c => !["youth-programs","gym-events","other"].includes(c.key)).map(c => c.key)));
+// Defaults for a fresh device / a friend opening the app for the first time.
+// Once someone changes their filters, their own choices are saved and used instead.
+const DEFAULT_GYMS = ["ironworks", "oaks", "power", "pacificpipe"]; // Oakland & Berkeley
+const DEFAULT_CATS = ["intro-classes", "climbing-clinics", "yoga-classes", "yoga-clinics", "fitness-classes", "fitness-clinics"]; // Climbing, Yoga, Fitness
+let selGyms = new Set(store.load("ts_gyms", DEFAULT_GYMS));
+let selCats = new Set(store.load("ts_cats", DEFAULT_CATS));
 let selDate = todayStr();
 const cfgCache = {};       // slug -> {plans: {planId: catKey}, byCat: {catKey: [planId]}}
 const dayCache = new Map();// `${slug}|${date}|${planKey}` -> events[]

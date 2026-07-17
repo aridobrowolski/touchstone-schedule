@@ -1,6 +1,6 @@
 {
-  "name": "Touchstone Schedules",
-  "short_name": "Touchstone",
+  "name": "Touchstone Schedule",
+  "short_name": "Touchstone Schedule",
   "description": "Combined live class schedule for all Touchstone Climbing gyms",
   "start_url": ".",
   "display": "standalone",
